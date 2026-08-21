@@ -4,16 +4,17 @@ import {
   NavigationControl,
   Popup,
   type GeoJSONSource,
-  type LngLatBoundsLike,
   type MapLayerMouseEvent,
   type MapMouseEvent,
   type StyleSpecification,
 } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
+import '../lib/mapa-worker'
 import type { FeatureCollection } from 'geojson'
 import type { Place } from '../types'
 import { coloreaPaises } from '../lib/countries'
 import { banderaDePais, colorDePais } from '../lib/palette'
+import { vistaQueAbarca } from '../lib/encaje'
 
 export type Vuelo = { lat: number; lon: number; zoom?: number; nonce: number }
 
@@ -44,11 +45,23 @@ const ESTILO: StyleSpecification = {
   },
   layers: [
     { id: 'fondo', type: 'background', paint: { 'background-color': '#0b1120' } },
-    { id: 'base', type: 'raster', source: 'base', paint: { 'raster-opacity': 0.9 } },
+    {
+      id: 'base',
+      type: 'raster',
+      source: 'base',
+      paint: {
+        'raster-opacity': 0.85,
+        'raster-brightness-max': 0.55,
+        'raster-saturation': -0.25,
+      },
+    },
   ],
 }
 
 const VACIO: FeatureCollection = { type: 'FeatureCollection', features: [] }
+
+// Hueco que hay que dejar libre: arriba la cabecera, abajo el panel de la lista.
+const RELLENO = { arriba: 80, abajo: 200, izquierda: 40, derecha: 40 }
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -99,6 +112,23 @@ export function MapaMundi({
   const sitiosRef = useRef(sitios)
   sitiosRef.current = sitios
 
+  const encajar = (m: MapaLibre, animar: boolean) => {
+    const lista = sitiosRef.current
+    if (lista.length === 0) {
+      m.flyTo({ center: [8, 32], zoom: 1.4 })
+      return
+    }
+    const caja = m.getContainer().getBoundingClientRect()
+    const vista = vistaQueAbarca(lista, caja.width, caja.height, RELLENO)
+    if (!vista) return
+    m.easeTo({
+      center: [vista.lon, vista.lat],
+      zoom: vista.zoom,
+      duration: animar ? 900 : 0,
+      essential: true,
+    })
+  }
+
   useEffect(() => {
     if (!contenedor.current || mapa.current) return
     // MapLibre necesita WebGL2. Si no está, mejor decirlo que dejar la pantalla negra.
@@ -113,7 +143,9 @@ export function MapaMundi({
       style: ESTILO,
       center: [8, 32],
       zoom: 1.4,
-      minZoom: 1,
+      // Con mínimo 1, en la pantalla de un móvil no cabe el mundo entero y el
+      // encaje se queda corto dejando sitios fuera.
+      minZoom: 0,
       maxZoom: 18,
       dragRotate: false,
       pitchWithRotate: false,
@@ -138,13 +170,13 @@ export function MapaMundi({
         id: 'paises-relleno',
         type: 'fill',
         source: 'paises',
-        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.2 },
+        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.32 },
       })
       m.addLayer({
         id: 'paises-borde',
         type: 'line',
         source: 'paises',
-        paint: { 'line-color': ['get', 'color'], 'line-width': 1.2, 'line-opacity': 0.75 },
+        paint: { 'line-color': ['get', 'color'], 'line-width': 1.3, 'line-opacity': 0.9 },
       })
       m.addLayer({
         id: 'sitios-halo',
@@ -171,6 +203,8 @@ export function MapaMundi({
 
       listo.current = true
       setEstado('listo')
+      // Abrir la app y ver tu mundo, sin tener que pulsar nada.
+      if (sitiosRef.current.length > 0) encajar(m, false)
       pendiente.current?.()
       pendiente.current = null
     })
@@ -272,35 +306,17 @@ export function MapaMundi({
     })
   }, [vuelo])
 
-  // Encajar todos los sitios en pantalla.
+  // El botón de encajar.
   useEffect(() => {
     const m = mapa.current
     if (!m || ajustarNonce === 0) return
-    const lista = sitiosRef.current
-    if (lista.length === 0) {
-      m.flyTo({ center: [8, 32], zoom: 1.4 })
-      return
-    }
-    if (lista.length === 1) {
-      m.flyTo({ center: [lista[0].lon, lista[0].lat], zoom: 8 })
-      return
-    }
-    const lons = lista.map((s) => s.lon)
-    const lats = lista.map((s) => s.lat)
-    const limites: LngLatBoundsLike = [
-      [Math.min(...lons), Math.min(...lats)],
-      [Math.max(...lons), Math.max(...lats)],
-    ]
-    m.fitBounds(limites, {
-      padding: { top: 90, bottom: 260, left: 50, right: 50 },
-      maxZoom: 9,
-      duration: 900,
-    })
+    encajar(m, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ajustarNonce])
 
   return (
     <>
-      <div ref={contenedor} className="absolute inset-0" />
+      <div ref={contenedor} className="h-full w-full" />
       {estado !== 'listo' && (
         <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-8">
           {estado === 'cargando' ? (

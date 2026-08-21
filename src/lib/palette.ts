@@ -3,24 +3,27 @@
  * Tonos vivos elegidos para destacar sobre el mapa oscuro.
  */
 const PALETA = [
+  // Intercalados a propósito: dos países con códigos parecidos caen en índices
+  // vecinos, y si la paleta fuese en orden de tono saldrían todos del mismo color.
+  // Aquí cada salto cruza la rueda, así que siempre se distinguen.
   '#f87171', // rojo coral
-  '#fb923c', // naranja
-  '#fbbf24', // ámbar
-  '#facc15', // amarillo
-  '#a3e635', // lima
-  '#4ade80', // verde
-  '#34d399', // esmeralda
-  '#2dd4bf', // turquesa
   '#22d3ee', // cian
-  '#38bdf8', // celeste
-  '#60a5fa', // azul
-  '#818cf8', // índigo
+  '#fbbf24', // ámbar
   '#a78bfa', // violeta
-  '#c084fc', // púrpura
-  '#e879f9', // fucsia
+  '#a3e635', // lima
   '#f472b6', // rosa
+  '#2dd4bf', // turquesa
+  '#fb923c', // naranja
+  '#60a5fa', // azul
+  '#facc15', // amarillo
+  '#e879f9', // fucsia
+  '#34d399', // esmeralda
   '#fda4af', // rosa claro
+  '#38bdf8', // celeste
+  '#4ade80', // verde
+  '#c084fc', // púrpura
   '#5eead4', // turquesa claro
+  '#818cf8', // índigo
 ] as const
 
 export function colorDePais(codigoIso: string): string {

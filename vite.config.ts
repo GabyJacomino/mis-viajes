@@ -6,6 +6,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   // GitHub Pages sirve el sitio en /mis-viajes/, no en la raíz del dominio.
   base: '/mis-viajes/',
+  // El worker de MapLibre es un módulo ES; sin esto Vite lo empaqueta como
+  // script clásico y el navegador no puede cargarlo.
+  worker: { format: 'es' },
   plugins: [
     react(),
     tailwindcss(),

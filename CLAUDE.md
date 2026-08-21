@@ -41,6 +41,28 @@ Sin backend, sin base de datos, sin cuentas.
 
 ## Trampas conocidas
 
+- **El contenedor del mapa NO se posiciona con `absolute inset-0`.** `maplibre-gl.css`
+  declara `position: relative` en `.maplibregl-map`, y en Tailwind 4 las utilidades
+  viven en `@layer utilities`, que pierde contra un CSS importado sin capa. El
+  `absolute` se ignoraba, el div se quedaba con **altura 0** y el mapa no se dibujaba
+  en ningún navegador. Se le da tamaño explícito (`h-full w-full`), que además es
+  como MapLibre espera su contenedor.
+- **MapLibre v6 no deja que el empaquetador vea su worker.** Lo resuelve en ejecución
+  con `new URL(`./${nombre}`, import.meta.url)`, así que el fichero nunca se copiaba
+  y el mapa se quedaba a medias. Lo arregla `src/lib/mapa-worker.ts` con
+  `?worker&url` + `setWorkerUrl`, y hace falta `worker: { format: 'es' }` en
+  `vite.config.ts` porque el worker es un módulo ES.
+- **En una pantalla de móvil en vertical no cabe el mundo entero.** MapLibre no deja
+  bajar del zoom en que el alto del mundo llena la pantalla (~0,72 a 844 px), y a ese
+  zoom solo entran unos 166° de longitud. Con sitios muy repartidos (México y Japón a
+  la vez) es imposible verlos todos de golpe con el mapa plano. `src/lib/encaje.ts`
+  calcula la mejor vista posible; si algún día molesta, la salida es la proyección de
+  globo (`projection: { type: 'globe' }` en el estilo).
+- **`fitBounds` no sirve para sitios repartidos por el planeta**: interpreta los
+  límites de forma distinta a la esperada y encaja el lado corto. De ahí que el
+  encaje se calcule a mano en `encaje.ts`, que además es una función pura y se puede
+  comprobar con números.
+
 - `setTodos(prev => ...)` **no** deja leer el resultado en la línea siguiente.
   Para eso está `todosRef` en `useSitios.ts`, que se asigna en cada render.
 - `maplibre-gl` v6 **no tiene export por defecto**: hay que importar con nombre
