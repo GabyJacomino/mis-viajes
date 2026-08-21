@@ -57,6 +57,21 @@ function arcoDeLongitudes(lones: number[]): { centro: number; ancho: number } {
   return { centro: normaliza(inicioTrasHueco + ancho / 2), ancho }
 }
 
+/**
+ * Zoom al que la esfera llena la pantalla, en proyección de globo.
+ *
+ * En el globo el zoom significa distancia a la esfera, no cuántos grados caben:
+ * el zoom que calcula `vistaQueAbarca` para sitios muy repartidos deja el planeta
+ * hecho una canica en medio de la pantalla. Con esto se pone como suelo.
+ *
+ * A zoom z el mundo mide 512·2^z pixeles de ancho en plano, y el globo se dibuja
+ * con ese perímetro, así que su diámetro es esa medida partido por π.
+ */
+export function zoomDelGloboCompleto(ancho: number, alto: number): number {
+  const diametro = Math.max(120, Math.min(ancho, alto))
+  return Math.log2((diametro * Math.PI) / MUNDO)
+}
+
 export function vistaQueAbarca(
   puntos: Punto[],
   ancho: number,
@@ -85,10 +100,8 @@ export function vistaQueAbarca(
 
   const zoom = recorta(Math.min(zoomPorAncho, zoomPorAlto), 0, zoomMaximo)
 
-  // El centro vertical se compensa: el relleno de abajo es mayor (ahí va el
-  // panel de la lista), así que el contenido tiene que subir un poco.
-  const escala = MUNDO * 2 ** zoom
-  const centroY = (yMin + yMax) / 2 + (relleno.abajo - relleno.arriba) / 2 / escala
-
-  return { lon: arco.centro, lat: aLatitud(recorta(centroY, 0, 1)), zoom }
+  // El desplazamiento por el panel de abajo NO se hace aquí: se le pasa el
+  // relleno al mapa y lo aplica él. Compensarlo a mano exige saber el zoom
+  // definitivo, y al mandar el mínimo del globo por encima salía descuadrado.
+  return { lon: arco.centro, lat: aLatitud(recorta((yMin + yMax) / 2, 0, 1)), zoom }
 }

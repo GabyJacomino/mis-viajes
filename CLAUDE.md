@@ -24,6 +24,18 @@ Sin backend, sin base de datos, sin cuentas.
   El respaldo es el fichero de copia que se guarda a mano (`backup.ts`).
 - **Todo en español**: nombres de variables, funciones, comentarios y textos de
   pantalla. El tipo `Place` y sus campos siguen en inglés por costumbre del dominio.
+- **Globo, no mapa plano.** `projection: { type: 'globe' }` en el estilo. Con el mapa
+  plano, en una pantalla de móvil en vertical MapLibre no deja alejarse lo suficiente
+  para ver sitios muy repartidos (México y Japón a la vez), y además el globo queda
+  mucho mejor para una app de viajes.
+- **Los continentes los dibujamos nosotros de lejos.** El mapa de calles de CARTO
+  trae la tierra MÁS oscura que el agua, así que de lejos no se distingue nada y
+  cualquier ajuste de brillo aclara el océano y lo deja gris pálido. De lejos se
+  pintan las siluetas de `world-atlas` (mar azul noche, tierra más clara) y el mapa
+  de calles entra por encima a partir del zoom 3,6, que es donde hace falta detalle
+  real y donde nuestras siluetas de baja resolución se quedarían cortas.
+- **El tinte del país se retira al acercarse.** A pie de calle un 32 % de color tiñe
+  toda la pantalla y tapa el mapa; la opacidad baja a 0 hacia el zoom 8.
 - **Mapa sin claves de API**: teselas raster de CARTO (`dark_all`) y búsqueda con
   Nominatim. Si hay que cambiar de proveedor, mantener el requisito de "gratis y sin
   clave" salvo que Gabriela diga lo contrario.

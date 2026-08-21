@@ -36,6 +36,9 @@ Queda con su icono y a pantalla completa, como cualquier app.
   exacto del mapa. La app averigua sola qué sitio y qué país es.
 - **Colores**: cada país tiene su color, siempre el mismo. El territorio se tiñe de
   ese color y encima va un punto blanco con anillo del color por cada sitio.
+- **De lejos es un globo**: la Tierra como esfera, con tus países encendidos. Al
+  acercarte, el globo se convierte en mapa de calles con el detalle real del sitio,
+  y el tinte del país se retira para no estorbar.
 - **Encuadrar**: el botón del cuadrado ajusta la vista a todos tus sitios.
 - **Lista**: toca la barra de cifras de abajo para desplegar tus países y sitios.
 

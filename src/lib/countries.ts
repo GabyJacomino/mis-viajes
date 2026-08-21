@@ -44,6 +44,16 @@ export function contornosDePaises(): Promise<Contornos> {
   return cache
 }
 
+/**
+ * Todos los países del mundo, para dibujar los continentes por nuestra cuenta.
+ * El mapa de calles trae la tierra más oscura que el agua, y así no se distingue
+ * nada de lejos; pintándolo nosotros el mar queda azul noche y la tierra clara.
+ */
+export async function siluetaDelMundo(): Promise<FeatureCollection> {
+  const contornos = await contornosDePaises()
+  return { type: 'FeatureCollection', features: [...contornos.values()] }
+}
+
 /** Los países visitados, cada uno con su color, listos para pintar en el mapa. */
 export async function coloreaPaises(codigos: string[]): Promise<FeatureCollection> {
   const contornos = await contornosDePaises()

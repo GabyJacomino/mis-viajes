@@ -12,9 +12,9 @@ import { useEffect, useRef, useState } from 'react'
 import '../lib/mapa-worker'
 import type { FeatureCollection } from 'geojson'
 import type { Place } from '../types'
-import { coloreaPaises } from '../lib/countries'
+import { coloreaPaises, siluetaDelMundo } from '../lib/countries'
 import { banderaDePais, colorDePais } from '../lib/palette'
-import { vistaQueAbarca } from '../lib/encaje'
+import { vistaQueAbarca, zoomDelGloboCompleto } from '../lib/encaje'
 
 export type Vuelo = { lat: number; lon: number; zoom?: number; nonce: number }
 
@@ -28,9 +28,24 @@ type Props = {
   ajustarNonce: number
 }
 
-/** Mapa oscuro de CARTO: gratis, sin clave y con las etiquetas ya dibujadas. */
+/**
+ * El estilo del mapa. Dos capas de fondo que se relevan:
+ *  - De lejos, los continentes dibujados por nosotros: mar azul noche y tierra
+ *    más clara. El mapa de calles de CARTO no sirve para esto porque su tierra
+ *    es MÁS oscura que su agua y de lejos no se distingue nada.
+ *  - De cerca, el mapa de calles aparece por encima, que es donde hace falta
+ *    detalle real (calles, nombres de barrios) y donde nuestras siluetas, que
+ *    son de baja resolución, se quedarían cortas.
+ */
+const MAR = '#0a1020'
+const TIERRA = '#1b2743'
+const BORDE_TIERRA = '#2f3f66'
+
 const ESTILO: StyleSpecification = {
   version: 8,
+  // Globo en vez de mapa plano: con sitios muy repartidos, en una pantalla de
+  // móvil el mapa plano no puede alejarse lo suficiente para verlos todos.
+  projection: { type: 'globe' },
   sources: {
     base: {
       type: 'raster',
@@ -44,24 +59,14 @@ const ESTILO: StyleSpecification = {
     },
   },
   layers: [
-    { id: 'fondo', type: 'background', paint: { 'background-color': '#0b1120' } },
-    {
-      id: 'base',
-      type: 'raster',
-      source: 'base',
-      paint: {
-        'raster-opacity': 0.85,
-        'raster-brightness-max': 0.55,
-        'raster-saturation': -0.25,
-      },
-    },
+    { id: 'fondo', type: 'background', paint: { 'background-color': MAR } },
   ],
 }
 
 const VACIO: FeatureCollection = { type: 'FeatureCollection', features: [] }
 
 // Hueco que hay que dejar libre: arriba la cabecera, abajo el panel de la lista.
-const RELLENO = { arriba: 80, abajo: 200, izquierda: 40, derecha: 40 }
+const RELLENO = { arriba: 70, abajo: 170, izquierda: 30, derecha: 30 }
 
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
@@ -114,17 +119,29 @@ export function MapaMundi({
 
   const encajar = (m: MapaLibre, animar: boolean) => {
     const lista = sitiosRef.current
+    const caja = m.getContainer().getBoundingClientRect()
+    // Nunca alejarse más de lo que hace falta para ver el globo entero: pasado
+    // ese punto la Tierra se queda hecha una canica en medio de la pantalla.
+    const zoomSuelo = zoomDelGloboCompleto(caja.width, caja.height - RELLENO.arriba - RELLENO.abajo)
+    const relleno = {
+      top: RELLENO.arriba,
+      bottom: RELLENO.abajo,
+      left: RELLENO.izquierda,
+      right: RELLENO.derecha,
+    }
+    const duracion = animar ? 900 : 0
+
     if (lista.length === 0) {
-      m.flyTo({ center: [8, 32], zoom: 1.4 })
+      m.easeTo({ center: [8, 20], zoom: zoomSuelo, padding: relleno, duration: duracion })
       return
     }
-    const caja = m.getContainer().getBoundingClientRect()
     const vista = vistaQueAbarca(lista, caja.width, caja.height, RELLENO)
     if (!vista) return
     m.easeTo({
       center: [vista.lon, vista.lat],
-      zoom: vista.zoom,
-      duration: animar ? 900 : 0,
+      zoom: Math.max(vista.zoom, zoomSuelo),
+      padding: relleno,
+      duration: duracion,
       essential: true,
     })
   }
@@ -162,6 +179,40 @@ export function MapaMundi({
     )
 
     m.on('load', () => {
+      m.addSource('mundo', { type: 'geojson', data: VACIO })
+      m.addLayer({
+        id: 'mundo-relleno',
+        type: 'fill',
+        source: 'mundo',
+        paint: { 'fill-color': TIERRA },
+      })
+      m.addLayer({
+        id: 'mundo-borde',
+        type: 'line',
+        source: 'mundo',
+        paint: {
+          'line-color': BORDE_TIERRA,
+          'line-width': 0.6,
+          // De muy lejos las fronteras solo ensucian, y en el globo dejan
+          // artefactos alrededor de los polos. Entran al acercarse.
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 1.4, 0, 2.6, 1],
+        },
+      })
+      // El mapa de calles entra al acercarse, cuando de verdad aporta detalle.
+      m.addLayer({
+        id: 'base',
+        type: 'raster',
+        source: 'base',
+        paint: {
+          'raster-opacity': ['interpolate', ['linear'], ['zoom'], 3.6, 0, 5.6, 1],
+          'raster-brightness-min': 0.06,
+        },
+      })
+      void siluetaDelMundo().then((fc) => {
+        const fuente = m.getSource('mundo') as GeoJSONSource | undefined
+        fuente?.setData(fc)
+      })
+
       m.addSource('paises', { type: 'geojson', data: VACIO })
       m.addSource('sitios', { type: 'geojson', data: VACIO })
 
@@ -170,13 +221,22 @@ export function MapaMundi({
         id: 'paises-relleno',
         type: 'fill',
         source: 'paises',
-        paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.32 },
+        paint: {
+          'fill-color': ['get', 'color'],
+          // A pie de calle un 32% de color lo tiñe todo y no se ve el mapa:
+          // el tinte sirve para la vista del mundo y se retira al acercarse.
+          'fill-opacity': ['interpolate', ['linear'], ['zoom'], 4, 0.34, 6, 0.12, 8, 0],
+        },
       })
       m.addLayer({
         id: 'paises-borde',
         type: 'line',
         source: 'paises',
-        paint: { 'line-color': ['get', 'color'], 'line-width': 1.3, 'line-opacity': 0.9 },
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 1.3,
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 6, 0.9, 9, 0.45],
+        },
       })
       m.addLayer({
         id: 'sitios-halo',
