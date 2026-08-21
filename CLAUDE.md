@@ -35,6 +35,9 @@ Sin backend, sin base de datos, sin cuentas.
   paleta o el hash le cambia el color a países ya marcados; evitarlo.
 - **Borrado con lápida**: borrar pone `deleted: true`, no quita la fila. Sin eso, al
   restaurar una copia antigua reaparecerían los sitios ya borrados.
+- **`base: '/mis-viajes/'`** en `vite.config.ts` tiene que ir siempre acompañado de
+  `scope` y `start_url` iguales en el manifiesto. Si no, el icono instalado abre una
+  página que no existe.
 
 ## Trampas conocidas
 
@@ -63,9 +66,12 @@ parece que el mapa está roto cuando no lo está.
 
 ## Git
 
-- Repositorio: `https://github.com/GabyJacomino/mis-viajes` (**privado**), rama `main`.
-- Identidad **local de este repo**: `Gabriela Jacomino <gaby.jacomino@gmail.com>`.
-  La global del equipo apunta al correo del trabajo; no tocarla y no usarla aquí.
+- Repositorio: `https://github.com/GabyJacomino/mis-viajes` (**público**), rama `main`.
+- Publicada en `https://gabyjacomino.github.io/mis-viajes/` vía GitHub Pages; el
+  workflow `publicar.yml` despliega en cada empujón a `main`.
+- Identidad **local de este repo**: el correo anónimo de GitHub
+  (`90014996+GabyJacomino@users.noreply.github.com`). El repo es público: no volver
+  a poner aquí ni el gmail personal ni el correo del trabajo.
 - `gh` está en `C:\Program Files\GitHub CLI\gh.exe`. Si no responde por nombre es
   que la terminal arrastra un PATH viejo: llamarlo por la ruta completa.
 - **`github.com` no responde desde el shell tipo Unix de Claude Code** (sandbox de

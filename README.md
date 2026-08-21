@@ -5,6 +5,9 @@ y el país se enciende con su color y aparece un punto en el lugar exacto.
 
 Proyecto **personal**. Nada que ver con el trabajo.
 
+**Publicada en https://gabyjacomino.github.io/mis-viajes/** — cada empujón a `main`
+la reconstruye y la publica sola (ver `.github/workflows/publicar.yml`).
+
 ## Arrancarlo
 
 ```bash
@@ -55,8 +58,14 @@ Merece la pena guardar una copia de vez en cuando.
 
 ## Publicarlo
 
-`npm run build` deja todo en `dist/`. Vale cualquier hosting estático
-(Vercel, Netlify, Cloudflare Pages). Sin servidor propio: la app no tiene backend.
+Ya está publicada en GitHub Pages y se despliega sola al subir a `main`.
+
+Ojo: Pages sirve el sitio en `/mis-viajes/`, no en la raíz del dominio. De ahí el
+`base` en `vite.config.ts` y el `scope`/`start_url` del manifiesto. Si algún día se
+mueve a un dominio propio, hay que quitar las tres cosas a la vez.
+
+`npm run build` deja todo en `dist/`, así que también vale cualquier otro hosting
+estático. Sin servidor propio: la app no tiene backend.
 
 ## De dónde salen los datos
 
