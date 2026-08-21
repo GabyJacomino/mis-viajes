@@ -60,3 +60,13 @@ npm run build     # producción
 Al verificar en el navegador: el panel de vista previa **tiene que estar visible**.
 Si está oculto, el contenedor del mapa se queda sin alto, MapLibre no pide teselas y
 parece que el mapa está roto cuando no lo está.
+
+## Git
+
+- Repositorio: `https://github.com/GabyJacomino/mis-viajes` (**privado**), rama `main`.
+- Identidad **local de este repo**: `Gabriela Jacomino <gaby.jacomino@gmail.com>`.
+  La global del equipo apunta al correo del trabajo; no tocarla y no usarla aquí.
+- `gh` está en `C:\Program Files\GitHub CLI\gh.exe`. Si no responde por nombre es
+  que la terminal arrastra un PATH viejo: llamarlo por la ruta completa.
+- **`github.com` no responde desde el shell tipo Unix de Claude Code** (sandbox de
+  red), pero sí desde PowerShell. Los `git push` / `gh` van por PowerShell.
