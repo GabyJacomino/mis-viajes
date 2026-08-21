@@ -4,6 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // GitHub Pages sirve el sitio en /mis-viajes/, no en la raíz del dominio.
+  base: '/mis-viajes/',
   plugins: [
     react(),
     tailwindcss(),
@@ -18,7 +20,9 @@ export default defineConfig({
         theme_color: '#0b1120',
         background_color: '#0b1120',
         display: 'standalone',
-        start_url: '/',
+        id: '/mis-viajes/',
+        scope: '/mis-viajes/',
+        start_url: '/mis-viajes/',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
