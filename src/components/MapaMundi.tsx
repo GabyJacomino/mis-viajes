@@ -9,7 +9,7 @@ import {
   type MapMouseEvent,
   type StyleSpecification,
 } from 'maplibre-gl'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FeatureCollection } from 'geojson'
 import type { Place } from '../types'
 import { coloreaPaises } from '../lib/countries'
@@ -83,6 +83,9 @@ export function MapaMundi({
   vuelo,
   ajustarNonce,
 }: Props) {
+  // Un mapa que falla se queda en negro y sin decir nada; esto lo cuenta en pantalla.
+  const [estado, setEstado] = useState<'cargando' | 'listo' | string>('cargando')
+  const [medida, setMedida] = useState('')
   const contenedor = useRef<HTMLDivElement>(null)
   const mapa = useRef<MapaLibre | null>(null)
   const globo = useRef<Popup | null>(null)
@@ -98,6 +101,13 @@ export function MapaMundi({
 
   useEffect(() => {
     if (!contenedor.current || mapa.current) return
+    // MapLibre necesita WebGL2. Si no está, mejor decirlo que dejar la pantalla negra.
+    if (!document.createElement('canvas').getContext('webgl2')) {
+      setEstado('Este navegador no puede dibujar el mapa: le falta WebGL2.')
+      return
+    }
+    const caja = contenedor.current.getBoundingClientRect()
+    setMedida(`${Math.round(caja.width)}x${Math.round(caja.height)}`)
     const m = new MapaLibre({
       container: contenedor.current,
       style: ESTILO,
@@ -160,8 +170,15 @@ export function MapaMundi({
       })
 
       listo.current = true
+      setEstado('listo')
       pendiente.current?.()
       pendiente.current = null
+    })
+
+    m.on('error', (e) => {
+      const motivo = e.error?.message ?? 'error sin detalle'
+      setEstado(motivo)
+      console.error('[mapa]', motivo, e)
     })
 
     m.on('click', 'sitios-punto', (e: MapLayerMouseEvent) => {
@@ -281,5 +298,24 @@ export function MapaMundi({
     })
   }, [ajustarNonce])
 
-  return <div ref={contenedor} className="absolute inset-0" />
+  return (
+    <>
+      <div ref={contenedor} className="absolute inset-0" />
+      {estado !== 'listo' && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-8">
+          {estado === 'cargando' ? (
+            <p className="flex items-center gap-2.5 rounded-full border border-slate-700/60 bg-slate-900/80 px-4 py-2 text-xs text-slate-400 backdrop-blur">
+              <span className="h-3 w-3 animate-spin rounded-full border-2 border-slate-600 border-t-teal-400" />
+              Cargando el mapa… <span className="text-slate-600">{medida}</span>
+            </p>
+          ) : (
+            <div className="pointer-events-auto max-w-xs rounded-2xl border border-rose-900/60 bg-slate-900/90 px-4 py-3 text-center backdrop-blur">
+              <p className="text-sm font-medium text-rose-300">El mapa no ha podido cargarse</p>
+              <p className="mt-1.5 break-words text-xs text-slate-400">{estado}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
 }
